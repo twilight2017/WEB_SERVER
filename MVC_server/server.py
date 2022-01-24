@@ -2,8 +2,9 @@
 
 import socket
 import threading
-
-from todo.config import HOST, PORT, BUFFER_SIZE
+from MVC_server.todo.controllers import routes
+from MVC_server.todo.utils import Request, Response
+from MVC_server.todo.config import HOST, PORT, BUFFER_SIZE
 
 
 # 处理客户端请求
@@ -21,11 +22,35 @@ def process_client_request(client):
     request_message = request_bytes.decode('utf-8')
     print(f'request_message: {request_message}')
 
-    # TODO:解析请求
-    # TODO：返回响应
+    # 解析请求报文，构造请求对象
+    request = Request(request_message)
+    # 根据请求报文构造响应报文
+    response_bytes = make_reponse(request)
+    # 返回响应
+    client.sendall(response_bytes)
 
     # 关闭请求
     client.close()
+
+
+def make_reponse(request, headers=None):
+    """构造响应报文"""
+    # 默认状态码：200
+    status = 200
+    # 获取匹配当前请求路径的处理函数和函数所接收的请求方法
+    rout, methods = routes.get(request.path)
+
+    if request.method not in methods:
+        status = 405
+        data = 'Method not allowed'
+    else:
+        data = rout()
+
+    # 获取响应报文
+    response = Response(data, headers=headers, status=status)
+    response_bytes = bytes(response)
+    print(f'response_bytes: {response_bytes}')
+    return response_bytes
 
 
 def main():
@@ -46,3 +71,8 @@ def main():
             # 创建新的线程来处理客户端连接
             # 一个客户端连接由一个线程负责管理
             t = threading.Thread(target=process_client_request, args=(client,))
+            t.start()
+
+
+if __name__ == '__main__':
+    main()

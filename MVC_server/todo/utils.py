@@ -33,7 +33,7 @@ class Request(object):
         headers = {}
         for header in request_header.split('\r\n'):
             k, v = header.split(':', 1)
-            header[k] = v
+            headers[k] = v
         return method, path, headers
 
 
